@@ -44,8 +44,9 @@ Every new report starts from them.
 ## Also inside
 
 - A drawing pad over anatomical diagrams (mandible, midface, skull, ankle, wrist, dental charts and
-  more), with plates and adjustable screws, fractures, incisions, sutures and shading. The drawing is
-  printed beside the operative findings.
+  more), with plates and adjustable screws, fractures, incisions, sutures and shading. A drawing of one
+  side, such as the TMJ or the hand, can be switched to the other side. The drawing is printed beside the
+  operative findings.
 - A teeth builder for OMFS and paediatric dentistry: set what was done to each tooth and it writes the
   procedure for you.
 - ICD-10 suggestions as you type a diagnosis. They help you choose the words and are never printed.
