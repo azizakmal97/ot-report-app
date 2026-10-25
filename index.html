@@ -214,6 +214,7 @@ textarea.tall{min-height:220px}
 .about{font-size:12px;color:var(--muted);text-align:center;padding:8px 6px 14px}
 .about p{margin:4px 0}
 .about a,.help a{color:var(--accent);font-weight:600}
+.first-note{margin:0;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--accent-soft);font-size:13px}   /* first run only: says what to fill in */
 /* jump to a section; stays under the header while the form scrolls */
 .secnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--bar-h,57px));z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 0;margin-block:-8px -4px;background:var(--bg);scrollbar-width:none}
 .secnav::-webkit-scrollbar{display:none}
@@ -526,6 +527,7 @@ textarea.tall{min-height:220px}
 <div class="panel" id="settings" hidden>
   <div role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <div class="row between"><h2 id="setTitle">Settings</h2><button class="btn" type="button" id="btnCloseSet">Done</button></div>
+    <p class="first-note" id="setFirst" hidden><b>Set up once.</b> Fill in your hospital, place, your name and your staff lists below. Every new report starts with them. Press Done when you're finished. The Settings button brings you back here.</p>
     <p class="help" style="margin:0">Saved in this browser only. Used as defaults for every new patient.</p>
     <div class="grid">
       <div class="f"><span class="lbl">App version</span>
@@ -555,11 +557,11 @@ textarea.tall{min-height:220px}
       <div class="f"><span class="lbl">Print certifier's name</span><label class="tick" style="align-self:flex-start"><input type="checkbox" data-s="printCert"> Under “Signature” (leave off if you stamp)</label></div>
       <div class="f"><span class="lbl">Staff lists</span>
         <span class="help">One person per line, with the title, written the way it should print (for example DR and the full name). No commas inside a name. The names show as tap-to-fill suggestions in the Team section. A new name you type into the report is added here automatically. Delete a line to remove a name.</span></div>
-      <div class="f s3"><label for="s-surgeons">Surgeons</label><textarea id="s-surgeons" data-s="surgeons" rows="3" placeholder="One per line, e.g.&#10;DR (full name)&#10;DR (full name)"></textarea></div>
-      <div class="f s3"><label for="s-assts">Assistants</label><textarea id="s-assts" data-s="assts" rows="3" placeholder="One per line, e.g.&#10;DR (full name)&#10;DR (full name)"></textarea></div>
-      <div class="f s3"><label for="s-nurses">Nurses (scrub &amp; circulating)</label><textarea id="s-nurses" data-s="nurses" rows="3" placeholder="One per line, e.g.&#10;SN (full name)&#10;DSA (full name)"></textarea></div>
-      <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3" placeholder="One per line, e.g.&#10;DR (full name)&#10;DR (full name)"></textarea></div>
-      <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3" placeholder="One per line, with title&#10;and full name"></textarea></div>
+      <div class="f s3"><label for="s-surgeons">Surgeons</label><textarea id="s-surgeons" data-s="surgeons" rows="3" placeholder="One per line, e.g.&#10;DR AHMAD FARIS BIN OMAR&#10;DR NUR AINA BINTI HASSAN"></textarea></div>
+      <div class="f s3"><label for="s-assts">Assistants</label><textarea id="s-assts" data-s="assts" rows="3" placeholder="One per line, e.g.&#10;DR LIM WEI JIE&#10;DR PRIYA A/P RAMAN"></textarea></div>
+      <div class="f s3"><label for="s-nurses">Nurses (scrub &amp; circulating)</label><textarea id="s-nurses" data-s="nurses" rows="3" placeholder="One per line, e.g.&#10;SN NORAINI BINTI ISA&#10;DSA AZURA BINTI SALLEH"></textarea></div>
+      <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3" placeholder="One per line, e.g.&#10;DR TAN MEI LING&#10;DR HAKIM BIN ZAINAL"></textarea></div>
+      <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3" placeholder="One per line, e.g.&#10;SN FARAH BINTI ROSLI&#10;SN KHAIRUL BIN DAUD"></textarea></div>
     </div>
   </div>
 </div>
@@ -6471,6 +6473,7 @@ const DEF_S={contSheets:false,formOrg:"KEMENTERIAN KESIHATAN MALAYSIA",formCode:
   surgeons:"",assts:"",nurses:"",anaes:"",anaesAssts:"",custom:{},autosave:"case",crest:null,v:2};
 const AUTOSAVE=["case","all","off"];   // keep the case / everything / nothing if the page closes   // custom: the user's own builder options, by list
 const S=(()=>{ const st=store.get("otr.settings",{});
+  // updates must keep what users saved: a new format copies old values across, never deletes them (tools/test.mjs checks)
   if(st.v!==2){ for(const k of ["surgeons","assts","nurses","anaes","anaesAssts","printAuthor","printCert","cert","certTitle"]) delete st[k]; st.v=2; }  // move older saves to the new staff lists
   const o=Object.assign({},DEF_S,st); if(o.crest) delete o.crest.el; return o; })();
 try{ store.set("otr.settings",S); }catch(e){}
@@ -6775,7 +6778,7 @@ function attachSuggest(el){
   el.removeAttribute("list"); el.dataset.sug=key; el.setAttribute("autocomplete","off");
   if(el.nextElementSibling&&el.nextElementSibling.classList.contains("sug")) return;
   const box=document.createElement("div"); box.className="sug"; box.hidden=true; el.insertAdjacentElement("afterend",box);
-  const multi=el.dataset.k==="assistants"||el.dataset.k==="anesAssistants";
+  const multi=["surgeon","assistants","scrub","circulating","anesthetist","anesAssistants"].includes(el.dataset.k);   // every team role can hold several names
   const show=()=>{
     const parts=el.value.split(","); const cur=(multi?parts[parts.length-1]:el.value).trim().toUpperCase();
     const chosen=multi? parts.slice(0,-1).map(x=>x.trim().toUpperCase()) : [];
@@ -6980,9 +6983,9 @@ function newPatient(btn){
 /* custom builder options from an imported file: lists of short strings only */
 const cleanCustom=c=>Object.fromEntries(Object.entries(c||{}).filter(([,v])=>Array.isArray(v))
   .map(([k,v])=>[String(k).slice(0,30),v.filter(x=>typeof x==="string").map(x=>x.slice(0,120)).slice(0,30)]));
-function openSettings(){
+function openSettings(first){
   document.querySelectorAll("[data-s]").forEach(el=>{ const k=el.dataset.s; if(el.type==="checkbox") el.checked=!!S[k]; else el.value=S[k]??""; });
-  showCrest(); $("settings").hidden=false; $("btnCloseSet").focus();
+  $("setFirst").hidden=first!==true; showCrest(); $("settings").hidden=false; $("btnCloseSet").focus();
 }
 function showCrest(){ const i=$("crestImg"); const c=S.useFormCrest===false?null:((S.crest&&S.crest.data)?S.crest:(S.crestBW?BUILT_CREST_BW:BUILT_CREST)); if(c){ i.src=c.data; i.hidden=false; } else i.hidden=true; $("crestDel").textContent=S.crest?"Remove upload":"Remove"; }
 function showFormCode(){ $("brandCode").textContent=`${S.formCode||"Surgical report"} · A4 PDF`; }
@@ -6998,12 +7001,15 @@ function applyTheme(t){
   if(t==="auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme=t;
   const b=$("btnTheme"); b.textContent="Theme: "+cap1(t);
   b.setAttribute("aria-label",`Theme: ${t==="auto"?"follows this device":t}. Press to change.`); }
-function setView(v){ document.body.dataset.view=v; $("tabEdit").setAttribute("aria-selected",v==="edit"); $("tabPrev").setAttribute("aria-selected",v==="preview");
-  if(v==="preview") schedule(); else requestAnimationFrame(()=>lineEditors.forEach(ed=>ed.fitAll()));   // rows measure 0 while hidden
-  window.scrollTo(0,0); }
+let editY=0;   // back from Preview, the form opens where it was left, not at the top
+function setView(v){ if(document.body.dataset.view==="edit") editY=window.scrollY;
+  document.body.dataset.view=v; $("tabEdit").setAttribute("aria-selected",v==="edit"); $("tabPrev").setAttribute("aria-selected",v==="preview");
+  if(v==="preview"){ schedule(); window.scrollTo(0,0); }
+  else requestAnimationFrame(()=>{ lineEditors.forEach(ed=>ed.fitAll()); window.scrollTo(0,editY); }); }   // rows measure 0 while hidden: fit them before scrolling
 
-function openGuide(){ $("g-autosave").value=S.autosave; $("guide").hidden=false; $("guideTitle").focus(); }
-function closeGuide(){ $("guide").hidden=true; store.set("otr.guideSeen",true); }
+const firstRun=()=>!store.get("otr.guideSeen",false);
+function openGuide(){ $("g-autosave").value=S.autosave; $("btnGuideDone").textContent=firstRun()?"Next: your details":"Start"; $("guide").hidden=false; $("guideTitle").focus(); }
+function closeGuide(){ const first=firstRun(); $("guide").hidden=true; store.set("otr.guideSeen",true); if(first) openSettings(true); }   // a new user sets hospital, name and staff before the first report
 /* section menu: tap to open and scroll to a section; the one being read is marked */
 function bindSectionNav(){
   const nav=$("secNav"), links=[...nav.querySelectorAll("a")];
@@ -7080,7 +7086,7 @@ function init(){
   if(!inViewer){ $("btnOpen").hidden=false; $("btnOpen").onclick=openPdf;
     if(canShareFiles()){ for(const id of ["btnShare","btnShare2"]){ $(id).hidden=false; $(id).onclick=sharePdf; } }
     if(isIOS) $("btnPdf2").textContent="Save PDF"; }
-  $("btnSettings").onclick=openSettings;
+  $("btnSettings").onclick=()=>openSettings();
   $("btnStaff").onclick=()=>{ openSettings(); const ta=$("s-surgeons"); ta.focus(); ta.scrollIntoView({block:"center"}); };
   $("btnGuide").onclick=()=>{ $("settings").hidden=true; openGuide(); }; $("btnGuideDone").onclick=closeGuide;
   bindSectionNav(); setBarHeight(); if(!store.get("otr.guideSeen",false)) openGuide(); $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
@@ -7113,12 +7119,14 @@ function init(){
   window.addEventListener("beforeunload",e=>{ if(dirty&&D.name&&!inViewer&&S.autosave!=="all"){ e.preventDefault(); e.returnValue=""; } });   // kept patient details need no warning
   loadFormFont().then(schedule);
   $("f-newIc").addEventListener("change",e=>{ const v=fmtIc(e.target.value); if(v!==D.newIc){ e.target.value=D.newIc=v; schedule(); } });   // tidies a mid-text edit on leaving the field
-  initUpdates();
+  initUpdates(); keepStorage();
   render();
 }
+/* the installed app asks the browser not to clear saved settings and templates when the device runs low on space */
+function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="39";   // stamped by tools/build.py from sw.js
+const APP_VERSION="40";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
