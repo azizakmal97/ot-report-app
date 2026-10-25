@@ -361,12 +361,12 @@ textarea.tall{min-height:220px}
   <details class="sec" open id="secPatient">
     <summary><span class="no">1-9</span><span>Patient</span></summary>
     <div class="body">
-      <div class="f s3"><label for="f-newIc"><span class="n">4.</span>New I/C No.</label><input type="text" id="f-newIc" data-k="newIc" class="num" inputmode="numeric" placeholder="YYMMDD-PB-####" autocomplete="off"></div>
+      <div class="f s3"><label for="f-newIc"><span class="n">1.</span>New I/C No. or passport</label><input type="text" id="f-newIc" data-k="newIc" class="num" placeholder="YYMMDD-PB-#### or passport no." autocomplete="off"></div>
       <div class="f s3"><label for="f-gender">Gender</label><select id="f-gender" data-k="gender"><option value="">Auto from I/C</option><option>Male</option><option>Female</option></select></div>
-      <div class="f s4"><label for="f-name"><span class="n">1.</span>Patient's name</label><input type="text" id="f-name" data-k="name" autocomplete="off"></div>
-      <div class="f s2"><label for="f-mrn"><span class="n">2.</span>M.R. No</label><input type="text" id="f-mrn" data-k="mrn" class="num" autocomplete="off"></div>
-      <div class="f s2"><label for="f-age"><span class="n">5.</span>Age</label><input type="text" id="f-age" data-k="age" autocomplete="off"></div>
-      <div class="f s2"><label for="f-oldIc"><span class="n">3.</span>Old I/C No.</label><input type="text" id="f-oldIc" data-k="oldIc" class="num" autocomplete="off"></div>
+      <div class="f s4"><label for="f-name"><span class="n">2.</span>Patient's name</label><input type="text" id="f-name" data-k="name" autocomplete="off"></div>
+      <div class="f s2"><label for="f-mrn"><span class="n">3.</span>M.R. No</label><input type="text" id="f-mrn" data-k="mrn" class="num" autocomplete="off"></div>
+      <div class="f s2"><label for="f-age"><span class="n">4.</span>Age</label><input type="text" id="f-age" data-k="age" autocomplete="off"></div>
+      <div class="f s2"><label for="f-oldIc"><span class="n">5.</span>Old I/C No.</label><input type="text" id="f-oldIc" data-k="oldIc" class="num" autocomplete="off"></div>
       <div class="f s2"><label for="f-dept"><span class="n">6.</span>Department/unit</label><input type="text" id="f-dept" data-k="dept"></div>
       <div class="f s2"><label for="f-ward"><span class="n">7.</span>Ward</label><input type="text" id="f-ward" data-k="ward"></div>
       <div class="f s2"><label for="f-place"><span class="n">8.</span>Place</label><input type="text" id="f-place" data-k="place"></div>
@@ -842,9 +842,13 @@ const pad=n=>String(n).padStart(2,"0");
 function fmtDate(iso){ if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${pad(+d)}/${pad(+m)}/${y}`; }
 function t12(v){ if(!v) return {d:"",ap:""}; const [h,m]=v.split(":").map(Number); return {d:pad(h%12||12)+pad(m), ap:h<12?"am":"pm"}; }
 function icDigits(v){ return String(v||"").replace(/\D/g,""); }
-function genderFrom(ic){ const d=icDigits(ic); return d.length===12? (+d[11]%2? "Male":"Female") : ""; }
+// letters mean a passport number: kept as typed, and it holds no date of birth or sex
+function isPassport(v){ return /[A-Za-z]/.test(String(v||"")); }
+function icChars(v){ return isPassport(v)? String(v).replace(/[^0-9A-Za-z]/g,"").toUpperCase() : icDigits(v); }   // one per box on the form
+function fmtIc(v){ if(isPassport(v)) return v; const d=icDigits(v).slice(0,12); return d.slice(0,6)+(d.length>6?"-"+d.slice(6,8):"")+(d.length>8?"-"+d.slice(8):""); }   // YYMMDD-PB-####
+function genderFrom(ic){ const d=isPassport(ic)?"":icDigits(ic); return d.length===12? (+d[11]%2? "Male":"Female") : ""; }
 function ageFrom(ic,iso){
-  const d=icDigits(ic); if(d.length<6) return "";
+  const d=isPassport(ic)?"":icDigits(ic); if(d.length<6) return "";
   let yy=+d.slice(0,2), mm=+d.slice(2,4), dd=+d.slice(4,6);
   const ref=iso? new Date(iso+"T00:00:00") : new Date();
   const cy=ref.getFullYear()%100; const yr= yy> cy ? 1900+yy : 2000+yy;
@@ -881,7 +885,7 @@ function page1(D,S,cont){
   p.text("3. Old I/C No.",LX,b(2));
   boxRow(p,even(33.7,85.5,8),r(1),r(2),String(D.oldIc||"").replace(/[^0-9A-Za-z]/g,"").toUpperCase());
   p.text("4. New I/C No.",93.1,b(2));
-  boxRow(p,even(119.7,198.5,12),r(1),r(2),icDigits(D.newIc));
+  boxRow(p,even(119.7,198.5,12),r(1),r(2),icChars(D.newIc)); if(icChars(D.newIc).length>12) WARN.push("New I/C No. is too long for its 12 boxes.");
   // 3
   const age=D.age||ageFrom(D.newIc,D.date), sex=D.gender||genderFrom(D.newIc);
   lv(p,"5. Age :",LX,b(3),59,[age,sex].filter(Boolean).join(" / "),"Age");
@@ -6501,6 +6505,7 @@ function bindForm(){
       if(k.startsWith("anes.")||k==="anesOther"){ queueMicrotask(()=>{ D.operation=withAnaesthesia(D.operation,D.anes,D.anesOther); syncAnaesthesia(); refillExcept(el); }); }
       else if(el.type==="checkbox") D[k]=el.checked;
       else if(el.type==="radio"){ if(el.checked) D[k]=el.value; }
+      else if(k==="newIc"){ if(el.selectionStart===el.value.length) el.value=fmtIc(el.value); D.newIc=el.value; }   // dashes only while typing at the end, so a mid-text edit keeps its caret
       else D[k]=el.value;
       dirty=true; schedule();
     });
@@ -6658,7 +6663,7 @@ function render(){
     if(!hidden) drawCanvas(cv,pg,S,cssW); });
   const issues=[...new Set(warns)];
   if(!D.name.trim()) issues.unshift("Patient's name is empty.");
-  const icn=icDigits(D.newIc).length; if(icn&&icn!==12) issues.push("New I/C No. should have 12 digits.");
+  const icn=icDigits(D.newIc).length; if(icn&&icn!==12&&!isPassport(D.newIc)) issues.push("New I/C No. should have 12 digits.");
   const blanks=[["operation","Operation"],["preDx","Pre-op diagnosis"],["postDx","Post-op diagnosis"],["periopProc","Perioperative procedures"],["findings","Operative finding"],["access","Access"],["procedures","Procedures"],["closure","Closure"],["hpeA","HPE"]].filter(([k])=>String(D[k]||"").includes("___")).map(([,l])=>l);
   if(blanks.length) issues.push("Fill the ___ blanks in: "+blanks.join(", ")+".");
   if(!Object.values(D.anes||{}).some(Boolean)) issues.push("Tick the anaesthesia used (17).");
@@ -7102,12 +7107,13 @@ function init(){
   window.addEventListener("resize",()=>{ schedule(); setBarHeight(); lineEditors.forEach(ed=>ed.fitAll()); });
   window.addEventListener("beforeunload",e=>{ if(dirty&&D.name&&!inViewer&&S.autosave!=="all"){ e.preventDefault(); e.returnValue=""; } });   // kept patient details need no warning
   loadFormFont().then(schedule);
+  $("f-newIc").addEventListener("change",e=>{ const v=fmtIc(e.target.value); if(v!==D.newIc){ e.target.value=D.newIc=v; schedule(); } });   // tidies a mid-text edit on leaving the field
   initUpdates();
   render();
 }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="37";   // stamped by tools/build.py from sw.js
+const APP_VERSION="38";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
