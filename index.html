@@ -253,7 +253,10 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
   .previewSticky{position:static}
   .desk{max-height:none}
   body[data-view="edit"] .previewCol{display:none}
-  body[data-view="preview"] .editor{display:none}
+  /* Preview is a layer over the form, which keeps its place: back to Edit is exactly where you were, no scroll to restore */
+  body[data-view="preview"] .previewCol{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + var(--bar-h,57px));bottom:0;z-index:5;
+    overflow:auto;overscroll-behavior:contain;background:var(--bg);padding:14px max(16px,env(safe-area-inset-right,0px)) calc(90px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  html:has(body[data-view="preview"]){overflow:hidden}
   .tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);gap:8px;align-items:center;box-shadow:0 -6px 20px rgb(40 10 20 / .1);
     padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .seg{display:flex;border:1px solid var(--field-line);border-radius:var(--r-sm);overflow:hidden;flex:1;padding:3px;gap:3px;background:var(--sunk)}
@@ -353,6 +356,9 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
   .sk-head h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .sk-head select{flex:1;max-width:none}
   .sk-hint{font-size:13px}
+  /* every tool on show: rows wrap instead of scrolling sideways, which phone users did not discover */
+  .sk-bar{flex-wrap:wrap;overflow:visible;touch-action:auto}
+  .sk-bar :focus-visible{outline-offset:2px}
 }
 </style>
 
@@ -7033,11 +7039,10 @@ function applyTheme(t){
   if(t==="auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme=t;
   const b=$("btnTheme"); b.textContent="Theme: "+cap1(t);
   b.setAttribute("aria-label",`Theme: ${t==="auto"?"follows this device":t}. Press to change.`); }
-let editY=0, editRestoring=false;   // back from Preview, the form opens where it was left, not at the top
-function setView(v){ if(document.body.dataset.view==="edit"&&!editRestoring) editY=window.scrollY;   // mid-restore the scroll is not the user's yet
-  document.body.dataset.view=v; $("tabEdit").setAttribute("aria-selected",v==="edit"); $("tabPrev").setAttribute("aria-selected",v==="preview");
-  if(v==="preview"){ schedule(); window.scrollTo(0,0); }
-  else { editRestoring=true; requestAnimationFrame(()=>{ lineEditors.forEach(ed=>ed.fitAll()); window.scrollTo(0,editY); editRestoring=false; }); } }   // rows measure 0 while hidden: fit them before scrolling
+/* on phones Preview covers the form instead of replacing it (app.css), so the form never loses its place */
+function setView(v){ document.body.dataset.view=v; $("tabEdit").setAttribute("aria-selected",v==="edit"); $("tabPrev").setAttribute("aria-selected",v==="preview");
+  document.querySelector(".editor").inert=v==="preview";   // the covered form is out of reach of Tab and screen readers
+  if(v==="preview"){ schedule(); document.querySelector(".previewCol").scrollTop=0; } }
 
 // the installed app has its own first run: on Android it shares storage with the browser tab, where the guide may already be seen
 /* Back (Android's button, the browser's arrow, Escape): an open dialog or the Preview takes one history step,
@@ -7164,7 +7169,8 @@ function init(){
     D.procedures=imfSteps(mergeCases(parts.length?parts:[BLANK_TEMPLATE.data]).procedures,D.imf); D.poOthers=imfAftercare(D.poOthers,D.imf);
     syncThroatPack(); syncAnaesthesia(); fillForm(); schedule(); undoSnap=snap; toast(`Procedures rewritten: ${IMF_LABEL[D.imf]}`,()=>restoreSnap(undoSnap)); }));
   setView("edit");
-  window.addEventListener("resize",()=>{ schedule(); setBarHeight(); lineEditors.forEach(ed=>ed.fitAll()); });
+  window.addEventListener("resize",()=>{ schedule(); setBarHeight(); lineEditors.forEach(ed=>ed.fitAll());
+    if(window.innerWidth>900&&document.body.dataset.view==="preview") setView("edit"); });   // wide screens show both: a rotated tablet must not keep the form covered
   window.addEventListener("beforeunload",e=>{ if(dirty&&D.name&&!inViewer&&S.autosave!=="all"){ e.preventDefault(); e.returnValue=""; } });   // kept patient details need no warning
   loadFormFont().then(schedule);
   $("f-newIc").addEventListener("change",e=>{ const v=fmtIc(e.target.value); if(v!==D.newIc){ e.target.value=D.newIc=v; schedule(); } });   // tidies a mid-text edit on leaving the field
@@ -7189,7 +7195,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.6";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.7";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
