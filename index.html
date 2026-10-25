@@ -97,6 +97,7 @@ h2,h3{margin:0}
 .f>label .n,.lbl .n{font-weight:500;margin-right:4px;font-variant-numeric:tabular-nums}
 input[type=text],input[type=search],input[type=date],input[type=time],input[type=number],select,textarea{width:100%;border:1px solid var(--field-line);border-radius:var(--r-sm);background:var(--sunk);padding:8px 10px;min-width:0;
   transition:border-color .15s,box-shadow .15s,background-color .15s}
+::placeholder{color:var(--muted);opacity:1}   /* placeholders carry format hints (staff lists, I/C): browser grey was too faint in dark mode */
 input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 1px var(--accent),0 0 0 5px var(--ring);outline:none}   /* focus: a solid 2 px accent edge (6:1) and a soft glow */
 textarea{resize:vertical;line-height:1.45}
 textarea.tall{min-height:220px}
@@ -383,6 +384,8 @@ textarea.tall{min-height:220px}
       <div class="f s2"><label for="f-date"><span class="n">10.</span>Date</label><input type="date" id="f-date" data-k="date"></div>
       <div class="f s2"><label for="f-timeStart"><span class="n">11.</span>Time start</label><input type="time" id="f-timeStart" data-k="timeStart"></div>
       <div class="f s2"><label for="f-timeFinish"><span class="n">12.</span>Time finish</label><input type="time" id="f-timeFinish" data-k="timeFinish"></div>
+      <div class="f help">Tap a name under a field to fill it in. The names come from your staff lists in Settings.
+        <button class="btn small" type="button" id="btnStaff" style="align-self:flex-start">Edit staff lists</button></div>
       <div class="f s3"><label for="f-surgeon"><span class="n">13.</span>Surgeon</label><input type="text" id="f-surgeon" data-k="surgeon" list="dl-surgeon"></div>
       <div class="f s3"><label for="f-assistants"><span class="n">14.</span>Assistants</label><input type="text" id="f-assistants" data-k="assistants" list="dl-asst"></div>
       <div class="f s3"><label for="f-scrub"><span class="n">15a.</span>Scrub nurse</label><input type="text" id="f-scrub" data-k="scrub" list="dl-nurse"></div>
@@ -550,12 +553,13 @@ textarea.tall{min-height:220px}
       <div class="f s3"><label for="s-cert">Certified by: name</label><input type="text" id="s-cert" data-s="cert"></div>
       <div class="f s3"><label for="s-certTitle">Designation</label><input type="text" id="s-certTitle" data-s="certTitle"></div>
       <div class="f"><span class="lbl">Print certifier's name</span><label class="tick" style="align-self:flex-start"><input type="checkbox" data-s="printCert"> Under “Signature” (leave off if you stamp)</label></div>
-      <div class="f s3"><label for="s-surgeons">Surgeons</label><textarea id="s-surgeons" data-s="surgeons" rows="3"></textarea></div>
-      <div class="f s3"><label for="s-assts">Assistants</label><textarea id="s-assts" data-s="assts" rows="3"></textarea></div>
-      <div class="f s3"><label for="s-nurses">Nurses (scrub &amp; circulating)</label><textarea id="s-nurses" data-s="nurses" rows="3"></textarea></div>
-      <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3"></textarea></div>
-      <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3"></textarea></div>
-      <div class="f help">Staff lists: one name per line. They show as suggestions while you type. A new name you type into the report is added here automatically. Delete a line to remove a name.</div>
+      <div class="f"><span class="lbl">Staff lists</span>
+        <span class="help">One person per line, with the title, written the way it should print (for example DR and the full name). No commas inside a name. The names show as tap-to-fill suggestions in the Team section. A new name you type into the report is added here automatically. Delete a line to remove a name.</span></div>
+      <div class="f s3"><label for="s-surgeons">Surgeons</label><textarea id="s-surgeons" data-s="surgeons" rows="3" placeholder="One per line, e.g.&#10;DR (full name)&#10;DR (full name)"></textarea></div>
+      <div class="f s3"><label for="s-assts">Assistants</label><textarea id="s-assts" data-s="assts" rows="3" placeholder="One per line, e.g.&#10;DR (full name)&#10;DR (full name)"></textarea></div>
+      <div class="f s3"><label for="s-nurses">Nurses (scrub &amp; circulating)</label><textarea id="s-nurses" data-s="nurses" rows="3" placeholder="One per line, e.g.&#10;SN (full name)&#10;DSA (full name)"></textarea></div>
+      <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3" placeholder="One per line, e.g.&#10;DR (full name)&#10;DR (full name)"></textarea></div>
+      <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3" placeholder="One per line, with title&#10;and full name"></textarea></div>
     </div>
   </div>
 </div>
@@ -7077,6 +7081,7 @@ function init(){
     if(canShareFiles()){ for(const id of ["btnShare","btnShare2"]){ $(id).hidden=false; $(id).onclick=sharePdf; } }
     if(isIOS) $("btnPdf2").textContent="Save PDF"; }
   $("btnSettings").onclick=openSettings;
+  $("btnStaff").onclick=()=>{ openSettings(); const ta=$("s-surgeons"); ta.focus(); ta.scrollIntoView({block:"center"}); };
   $("btnGuide").onclick=()=>{ $("settings").hidden=true; openGuide(); }; $("btnGuideDone").onclick=closeGuide;
   bindSectionNav(); setBarHeight(); if(!store.get("otr.guideSeen",false)) openGuide(); $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
   $("settings").addEventListener("click",e=>{ if(e.target.id==="settings") $("settings").hidden=true; });
@@ -7113,7 +7118,7 @@ function init(){
 }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="38";   // stamped by tools/build.py from sw.js
+const APP_VERSION="39";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
