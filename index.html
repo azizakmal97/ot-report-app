@@ -356,9 +356,13 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
   .sk-head h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .sk-head select{flex:1;max-width:none}
   .sk-hint{font-size:13px}
-  /* every tool on show: rows wrap instead of scrolling sideways, which phone users did not discover */
-  .sk-bar{flex-wrap:wrap;overflow:visible;touch-action:auto}
+  /* every tool on show: rows wrap instead of scrolling sideways, which phone users did not discover.
+     Tools sit in an even grid that fills each row, so no ragged ends; option groups are set apart by space, not rules. */
+  .sk-bar{flex-wrap:wrap;overflow:visible;touch-action:auto;gap:6px 14px}
   .sk-bar :focus-visible{outline-offset:2px}
+  #skTools{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}   /* 58 px: five a row from 360 px phones up */
+  #skTools .sk-tool{min-width:0;padding-inline:3px}
+  .sk-group{border-right:none;padding-right:0}
 }
 </style>
 
@@ -6083,7 +6087,7 @@ const DEPT_TOOLS={omfs:SK_BONE,ortho:SK_BONE,gs:SK_ABDO,paedsurg:SK_ABDO,uro:SK_
   neuro:"burr incision drain plate lesion text arrow line pen", ent:SK_LOOK, ophthal:SK_LOOK,
   medical:"lesion drain shade text arrow line pen", paedsdental:"shade lesion incision suture text arrow line pen",
   other:"incision suture lesion shade text arrow line pen"};
-const SK_SEL_HINT={plate:"Drag an end or a screw; the side dot moves it. Screws and size are in the bar above",
+const SK_SEL_HINT={plate:"Drag an end or a screw; the side dot moves it. Set screws and size above",
   seg:"Drag an end dot to adjust, or the line to move it", box:"Drag to move. Corner dot resizes, top dot rotates",
   path:"Drag to move. Corner dot resizes, top dot rotates", text:"Tap it again to change the words. Corner dot resizes",
   region:"Delete clears this shading"};
@@ -7195,7 +7199,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.7";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.8";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
