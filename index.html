@@ -129,7 +129,7 @@ textarea.tall{min-height:220px}
 .combo{position:relative}
 .combo input[type=text]{padding-left:30px;min-height:44px;font-weight:600}
 .combo::before{content:"";position:absolute;left:11px;top:22px;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--field-line);pointer-events:none;z-index:1}
-.combo[data-dc]::before,.combo-list li[data-dc]::before{background:var(--dc-ledge)}
+.combo[data-dc]::before,.combo-list li[data-dc]::before,.sk-pick-head[data-dc]::before{background:var(--dc-ledge)}
 .combo-list{position:absolute;z-index:4;left:0;right:0;top:calc(100% + 4px);margin:0;padding:4px;list-style:none;max-height:min(340px,60vh);overflow:auto;
   background:var(--surface);border:1px solid var(--field-line);border-radius:var(--r-sm);box-shadow:0 10px 28px rgb(0 0 0 / .18)}   /* floats over the cards below */
 .combo-list li{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:var(--r-sm);cursor:pointer;font-size:14px}
@@ -152,7 +152,7 @@ textarea.tall{min-height:220px}
 .search input[type=search]{min-height:44px;padding-left:40px;border-radius:var(--r);background:var(--surface);font-size:14px}
 /* department colour: tinted card, coloured edge, department name in its colour (the colour encodes the department) */
 .tpl[data-dc],.dept-btn[data-dc]{background:var(--dc-lbg);border-left:4px solid var(--dc-ledge)}
-.tpl[data-dc] .tpl-dept,.dept-btn[data-dc]{color:var(--dc-ltag)}
+.tpl[data-dc] .tpl-dept,.dept-btn[data-dc],.sk-pick-head[data-dc]{color:var(--dc-ltag)}
 .tpl-results{display:flex;flex-direction:column;gap:8px}
 .tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px}
 .tpl{border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;min-height:38px;background:var(--sunk);cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;
@@ -242,11 +242,11 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
 .tabs{display:none}
 
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tpl[data-dc],:root:not([data-theme="light"]) .dept-btn[data-dc]{background:var(--dc-dbg);border-left-color:var(--dc-dedge)}
-  :root:not([data-theme="light"]) .tpl[data-dc] .tpl-dept,:root:not([data-theme="light"]) .dept-btn[data-dc]{color:var(--dc-dtag)}
-  :root:not([data-theme="light"]) .combo[data-dc]::before,:root:not([data-theme="light"]) .combo-list li[data-dc]::before{background:var(--dc-dedge)}}
+  :root:not([data-theme="light"]) .tpl[data-dc] .tpl-dept,:root:not([data-theme="light"]) .dept-btn[data-dc],:root:not([data-theme="light"]) .sk-pick-head[data-dc]{color:var(--dc-dtag)}
+  :root:not([data-theme="light"]) .combo[data-dc]::before,:root:not([data-theme="light"]) .combo-list li[data-dc]::before,:root:not([data-theme="light"]) .sk-pick-head[data-dc]::before{background:var(--dc-dedge)}}
 :root[data-theme="dark"] .tpl[data-dc],:root[data-theme="dark"] .dept-btn[data-dc]{background:var(--dc-dbg);border-left-color:var(--dc-dedge)}
-:root[data-theme="dark"] .tpl[data-dc] .tpl-dept,:root[data-theme="dark"] .dept-btn[data-dc]{color:var(--dc-dtag)}
-:root[data-theme="dark"] .combo[data-dc]::before,:root[data-theme="dark"] .combo-list li[data-dc]::before{background:var(--dc-dedge)}
+:root[data-theme="dark"] .tpl[data-dc] .tpl-dept,:root[data-theme="dark"] .dept-btn[data-dc],:root[data-theme="dark"] .sk-pick-head[data-dc]{color:var(--dc-dtag)}
+:root[data-theme="dark"] .combo[data-dc]::before,:root[data-theme="dark"] .combo-list li[data-dc]::before,:root[data-theme="dark"] .sk-pick-head[data-dc]::before{background:var(--dc-dedge)}
 @media (max-width:900px){
   .secnav a{min-height:44px}
   .wrap{grid-template-columns:minmax(0,1fr);padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
@@ -303,9 +303,28 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
 .skwrap [hidden]{display:none!important}   /* artifact.html has no global [hidden] reset, and these rows use flex */
 .panel>div.skwrap{width:min(1180px,100%);gap:8px;overflow:hidden;overscroll-behavior:contain;
   padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
-.sk-head{display:flex;align-items:center;gap:8px;flex:none}
+.sk-head{position:relative;display:flex;align-items:center;gap:8px;flex:none}   /* the background list hangs from it */
 .sk-head h2{margin-right:auto;white-space:nowrap}
-.sk-head select{width:auto;max-width:42%;min-width:0}
+
+/* The background picker. Department headings are written in the department's own colour, stay pinned while their
+   diagrams scroll, and the diagrams sit indented under them, so a heading is never mistaken for a diagram. */
+.sk-pick{position:relative;width:300px;min-width:0;max-width:42%}   /* a set width, so the buttons beside it stay put when the diagram changes */
+#skBg{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;text-align:left}
+#skBgName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#skBg::after{content:"";flex:none;width:7px;height:7px;margin:-4px 2px 0;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+#skBg[aria-expanded="true"]::after{margin-top:4px;transform:rotate(225deg)}
+.sk-pick-list{position:absolute;z-index:6;left:0;top:calc(100% + 4px);width:max(100%,360px);max-width:calc(100vw - 16px);max-height:min(560px,70dvh);
+  overflow:auto;overscroll-behavior:contain;padding:0 4px 4px;background:var(--surface);border:1px solid var(--field-line);border-radius:var(--r-sm);
+  box-shadow:0 10px 28px rgb(0 0 0 / .18)}   /* floats over the paper like the department list */
+.sk-pick-list:focus-visible{outline:none}   /* the highlighted row carries the focus ring */
+.sk-pick-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;margin:0 -4px;padding:12px 12px 6px;
+  background:var(--surface);color:var(--muted);font-size:12.5px;font-weight:700;border-bottom:1px solid var(--line)}
+.sk-pick-head::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--field-line)}
+.sk-pick-list [role=option]{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:2px;padding:6px 10px 6px 26px;border-radius:var(--r-sm);font-size:14px;cursor:pointer}
+.sk-pick-list>[role=option]{margin:4px -4px 0;padding-left:12px;border-top:1px solid var(--line);border-radius:0}   /* Blank sits apart, under every department */
+.sk-pick-list [aria-selected="true"]{font-weight:700;color:var(--accent)}
+.sk-pick-list [aria-selected="true"]::after{content:"";flex:none;width:6px;height:11px;margin:-3px 4px 0 auto;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.sk-pick-list [role=option].active{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
 
 /* tool and option rows scroll sideways on narrow screens; the canvas below stays put */
 .sk-bar{display:flex;align-items:center;gap:6px;flex:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:thin;padding:2px 2px 4px}
@@ -348,13 +367,15 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
 .sk-float button{min-width:44px;height:44px;display:grid;place-items:center;padding:0 8px;border:1px solid var(--field-line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:18px;font-weight:700;cursor:pointer}
 .sk-float #skFit{font-size:13.5px}
 
-@media (hover:hover){.sk-tool:hover,.sk-act:hover:not(:disabled),.sk-sw:hover:not(:disabled),.sk-float button:hover:not(:disabled){background:var(--sunk)}
+@media (hover:hover){.sk-pick-list [role=option]:not(.active):hover{background:var(--sunk)}
+  .sk-tool:hover,.sk-act:hover:not(:disabled),.sk-sw:hover:not(:disabled),.sk-float button:hover:not(:disabled){background:var(--sunk)}
   .sk-tool[aria-pressed="true"]:hover{background:var(--accent)}}
 /* phones: edge to edge, the title only for screen readers, the background picker takes the spare width */
 @media (max-width:700px){
   .panel>div.skwrap{gap:6px;padding:calc(8px + env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
   .sk-head h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  .sk-head select{flex:1;max-width:none}
+  .sk-pick{position:static;flex:1;max-width:none}
+  .sk-pick-list{right:0;width:auto;max-width:none}   /* the list spans the whole header row, as wide as the paper below */
   .sk-hint{font-size:13px}
   /* every tool on show: rows wrap instead of scrolling sideways, which phone users did not discover.
      Tools sit in an even grid that fills each row, so no ragged ends; option groups are set apart by space, not rules. */
@@ -618,7 +639,9 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
 <div class="panel" id="sketch" hidden>
   <div role="dialog" aria-modal="true" aria-labelledby="skTitle" class="skwrap">
     <div class="sk-head"><h2 id="skTitle">Draw diagram</h2>
-      <select id="skBg" aria-label="Background diagram"></select>
+      <div class="sk-pick" id="skPick"><span id="skBgLbl" hidden>Background diagram</span>
+        <button class="btn" type="button" id="skBg" aria-haspopup="listbox" aria-expanded="false" aria-controls="skBgList" aria-labelledby="skBgLbl skBgName"><span id="skBgName"></span></button>
+        <div class="sk-pick-list" id="skBgList" role="listbox" aria-labelledby="skBgLbl" tabindex="-1" hidden></div></div>
       <button class="btn" type="button" id="skCancel">Cancel</button><button class="btn primary" type="button" id="skInsert">Add to report</button></div>
     <div class="sk-bar" id="skTools" role="toolbar" aria-label="Drawing tools"></div>
     <div class="sk-bar" role="toolbar" aria-label="Colour, line width and editing">
@@ -6149,16 +6172,37 @@ const skSide=()=>{ const s=DIAGRAMS[SK.bg]?.side; return s&&(SK.flip? SK_SWAP[s]
 /* flipping mirrors what is drawn too, so a plate stays on the bone it was put on */
 function skFlip(){ closeSkText(true); skChange(()=>{ SK.flip=!SK.flip;
   for(const o of SK.objs){ if(o.pts) o.pts=o.pts.map(([x,y])=>[1000-x,y]); if(o.c) o.c=[1000-o.c[0],o.c[1]]; if(typeof o.rot==="number") o.rot=-o.rot; } }); }
-/* this department's diagrams first, then every other department's under its name (each diagram once), then blank */
+/* The background picker is our own list, not a <select>: Android drew department names and diagrams alike.
+   This department's diagrams first, then every other department's under its name (each diagram once), then blank. */
+const skBgOption=(id,text)=>{ const o=document.createElement("div"); o.setAttribute("role","option"); o.id="sko-"+(id||"blank"); o.dataset.bg=id; o.textContent=text; return o; };
 function fillSketchBackgrounds(){
-  const sel=$("skBg"), own=(builtinOf(dept())?.diagrams||[]).filter(id=>DIAGRAMS[id]), listed=new Set(own);
-  const opt=(value,text)=>{ const o=document.createElement("option"); o.value=value; o.textContent=text; return o; };
-  const group=(label,ids)=>{ if(!ids.length) return; const g=document.createElement("optgroup"); g.label=label; ids.forEach(id=>{ listed.add(id); g.append(opt(id,DIAGRAMS[id].title)); }); sel.append(g); };
-  sel.innerHTML=""; own.forEach(id=>sel.append(opt(id,DIAGRAMS[id].title)));
-  for(const d of DEPARTMENTS) if(d!==builtinOf(dept())) group(d.title||d.name,(d.diagrams||[]).filter(id=>DIAGRAMS[id]&&!listed.has(id)));
-  group("Other",Object.keys(DIAGRAMS).filter(id=>!listed.has(id)));   // a diagram no department lists yet
-  sel.append(opt("","Blank"));
+  const list=$("skBgList"), mine=builtinOf(dept()), listed=new Set(); let n=0;
+  const group=(label,ids,d)=>{ ids=ids.filter(id=>DIAGRAMS[id]&&!listed.has(id)); if(!ids.length) return;
+    const g=document.createElement("div"), h=document.createElement("div"); g.setAttribute("role","group"); h.id="skg-"+n++; g.setAttribute("aria-labelledby",h.id);
+    h.className="sk-pick-head"; h.textContent=label; if(d) paintDept(h,d); g.append(h);
+    ids.forEach(id=>{ listed.add(id); g.append(skBgOption(id,DIAGRAMS[id].title)); }); list.append(g); };
+  list.replaceChildren();
+  if(mine) group(mine.title||mine.name,mine.diagrams||[],mine);
+  for(const d of DEPARTMENTS) if(d!==mine) group(d.title||d.name,d.diagrams||[],d);
+  group("Other",Object.keys(DIAGRAMS));   // a diagram no department lists yet
+  list.append(skBgOption("","Blank, no diagram"));
 }
+const skBgOptions=()=>[...$("skBgList").querySelectorAll("[role=option]")];
+const skBgOpen=()=>!$("skBgList").hidden;
+function skSetBg(id){ SK.bg=id; let name="";
+  for(const o of skBgOptions()){ const on=o.dataset.bg===id; o.setAttribute("aria-selected",on); if(on) name=o.textContent; }
+  $("skBgName").textContent=name; }
+/* keeps the highlighted diagram in view below its pinned department heading */
+function skBgActive(i,center){ const list=$("skBgList"), os=skBgOptions(), a=os[i];
+  os.forEach(o=>o.classList.toggle("active",o===a)); if(!a){ list.removeAttribute("aria-activedescendant"); return; }
+  list.setAttribute("aria-activedescendant",a.id);
+  const head=a.parentElement.querySelector(".sk-pick-head")?.offsetHeight||0, t=a.offsetTop, b=t+a.offsetHeight;
+  if(center) list.scrollTop=t-(list.clientHeight+head-a.offsetHeight)/2;
+  else if(t-head<list.scrollTop) list.scrollTop=t-head; else if(b>list.scrollTop+list.clientHeight) list.scrollTop=b-list.clientHeight; }
+function openSkBg(){ const list=$("skBgList"); list.hidden=false; $("skBg").setAttribute("aria-expanded","true");
+  skBgActive(skBgOptions().findIndex(o=>o.dataset.bg===SK.bg),true); list.focus({preventScroll:true}); }
+function closeSkBg(refocus){ if(!skBgOpen()) return; $("skBgList").hidden=true; $("skBg").setAttribute("aria-expanded","false"); if(refocus) $("skBg").focus(); }
+function pickSkBg(id){ closeSkBg(true); if(id===SK.bg) return; skSetBg(id); SK.flip=false; SK.sel=-1; skSync(); skDraw(); }   // a new diagram starts on its own side
 /* The SVG is rasterised once per zoom band, not every frame. During a pinch the old bitmap is stretched; it sharpens when the fingers lift. */
 function skBgBitmap(){ const id=SK.bg&&(SK.flip? SK.bg+"|flip" : SK.bg), im=DIAGRAMS[SK.bg]&&diagramImage(SK.bg,SK.flip); if(!im||!im.complete||!im.naturalWidth) return null;
   const need=1000*SK.view.k*SK.dpr, want=[750,1000,1500,2000,3000].find(w=>w>=need)||3000, b=SK.bgc;
@@ -6463,10 +6507,23 @@ function skExport(){ const c=document.createElement("canvas"); c.width=1000; c.h
 function skReset(){ Object.assign(SK,{objs:[],sel:-1,cur:null,g:null,undo:[],redo:[],tool:null}); }
 /* An unfinished drawing survives Cancel or Escape and comes back on reopening; a new department or Add to report starts fresh. */
 function openSketch(){ const d=dept().name; if(SK.dept!==d){ skReset(); SK.dept=d; SK.bg=undefined; SK.flip=false; }   // a new department opens on its own first diagram
-  const sel=$("skBg"), prev=SK.bg; fillSketchBackgrounds(); if(prev!==undefined&&[...sel.options].some(o=>o.value===prev)) sel.value=prev;
-  SK.bg=sel.value; SK.fitted=true; skRenderTools(); $("sketch").hidden=false; skSync(); skDraw();
+  const prev=SK.bg; fillSketchBackgrounds(); const os=skBgOptions();
+  skSetBg(os.some(o=>o.dataset.bg===prev)? prev : os[0].dataset.bg); SK.fitted=true; skRenderTools(); $("sketch").hidden=false; skSync(); skDraw();
   document.querySelector("#skTools [aria-pressed=true]")?.focus(); }
-function closeSketch(){ closeSkText(false); $("sketch").hidden=true; $("btnSketch").focus(); }
+/* a listbox: arrows, Home and End move, Enter or Space picks, Escape or a tap outside closes */
+function bindSkBg(){ const btn=$("skBg"), list=$("skBgList");
+  btn.addEventListener("click",()=>skBgOpen()? closeSkBg(true) : openSkBg());
+  btn.addEventListener("keydown",e=>{ if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); openSkBg(); } });
+  list.addEventListener("click",e=>{ const o=e.target.closest("[role=option]"); if(o) pickSkBg(o.dataset.bg); });
+  list.addEventListener("keydown",e=>{ const os=skBgOptions(), n=os.length, i=os.findIndex(o=>o.classList.contains("active"));
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); skBgActive(i<0? 0 : (i+(e.key==="ArrowDown"?1:-1)+n)%n); }
+    else if(e.key==="Home"||e.key==="End"){ e.preventDefault(); skBgActive(e.key==="Home"? 0 : n-1); }
+    else if(e.key==="Enter"||e.key===" "){ e.preventDefault(); if(os[i]) pickSkBg(os[i].dataset.bg); }
+    else if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); closeSkBg(true); }   // Escape closes the list, not the whole pad
+    else if(e.key==="Tab") closeSkBg(false); });
+  // the canvas swallows pointerdown, so focus never leaves the list on a tap there
+  document.addEventListener("pointerdown",e=>{ if(skBgOpen()&&!$("skPick").contains(e.target)) closeSkBg(false); },true); }
+function closeSketch(){ closeSkText(false); closeSkBg(false); $("sketch").hidden=true; $("btnSketch").focus(); }
 
 function bindSketch(){
   const c=$("skCanvas"), P=SK.ptrs;
@@ -6504,14 +6561,14 @@ function bindSketch(){
     skSetTool(b.dataset.tool); });
   $("skCols").addEventListener("click",e=>{ const b=e.target.closest("[data-col]"); if(b) skSetCol(b.dataset.col); });
   $("skWidths").addEventListener("click",e=>{ const b=e.target.closest("[data-w]"); if(b) skSetWidth(+b.dataset.w); });
-  $("skBg").addEventListener("change",e=>{ SK.bg=e.target.value; SK.flip=false; SK.sel=-1; skSync(); skDraw(); });   // a new diagram starts on its own side
+  bindSkBg();
   $("skFewer").onclick=()=>changeScrews(false); $("skMore").onclick=()=>changeScrews(true);
   $("skLag").onclick=()=>{ const o=SK.objs[SK.sel]; if(o?.t==="screw") skChange(()=>{ o.lag=!o.lag; }); };
   $("skEdit").onclick=()=>{ const o=SK.objs[SK.sel]; if(o?.t==="text") openSkText(o); };
   $("skUndo").onclick=skUndo; $("skRedo").onclick=skRedo; $("skDel").onclick=skDelete; $("skFlip").onclick=skFlip;
   $("skClear").onclick=()=>skChange(()=>{ SK.objs=[]; SK.sel=-1; });
   $("skZoomIn").onclick=()=>skZoomAt(1.5,SK.W/2,SK.H/2); $("skZoomOut").onclick=()=>skZoomAt(1/1.5,SK.W/2,SK.H/2); $("skFit").onclick=skFit;
-  document.addEventListener("keydown",e=>{ if($("sketch").hidden||SK.edit||e.target.closest?.("input,select,textarea")) return;
+  document.addEventListener("keydown",e=>{ if($("sketch").hidden||SK.edit||e.target.closest?.("input,select,textarea,[role=listbox]")) return;
     const mod=e.ctrlKey||e.metaKey, key=e.key.toLowerCase();
     if((e.key==="Delete"||e.key==="Backspace")&&SK.sel>=0){ e.preventDefault(); skDelete(); }
     else if(mod&&key==="z"){ e.preventDefault(); e.shiftKey? skRedo() : skUndo(); }
@@ -7072,7 +7129,7 @@ function setView(v){ document.body.dataset.view=v; $("tabEdit").setAttribute("ar
 /* Back (Android's button, the browser's arrow, Escape): an open dialog or the Preview takes one history step,
    so Back closes it instead of leaving the app */
 function closeTop(){
-  if(!$("sketch").hidden) closeSketch(); else if(!$("guide").hidden) closeGuide();
+  if(!$("sketch").hidden){ if(skBgOpen()) closeSkBg(true); else closeSketch(); } else if(!$("guide").hidden) closeGuide();
   else if(!$("deptPanel").hidden){ $("deptPanel").hidden=true; renderTpls(); }
   else if(!$("settings").hidden) $("settings").hidden=true; else if(document.body.dataset.view==="preview") setView("edit"); }
 const overlayOpen=()=>!!document.querySelector(".panel:not([hidden])")||document.body.dataset.view==="preview";
@@ -7219,7 +7276,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.12";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.13";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
