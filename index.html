@@ -215,6 +215,10 @@ textarea.tall{min-height:220px}
 .about p{margin:4px 0}
 .about a,.help a{color:var(--accent);font-weight:600}
 .first-note{margin:0;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--accent-soft);font-size:13px}   /* first run only: says what to fill in */
+[tabindex="-1"]:focus{outline:none}   /* dialog titles take focus on open so it starts at the top; they are not controls */
+/* Done stays in reach at the bottom of a long dialog; the negative offsets cancel the dialog's own bottom padding */
+.panel-foot{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:auto -20px calc(-20px - env(safe-area-inset-bottom,0px));
+  padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:flex-end}
 /* jump to a section; stays under the header while the form scrolls */
 .secnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--bar-h,57px));z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 0;margin-block:-8px -4px;background:var(--bg);scrollbar-width:none}
 .secnav::-webkit-scrollbar{display:none}
@@ -526,7 +530,7 @@ textarea.tall{min-height:220px}
 
 <div class="panel" id="settings" hidden>
   <div role="dialog" aria-modal="true" aria-labelledby="setTitle">
-    <div class="row between"><h2 id="setTitle">Settings</h2><button class="btn" type="button" id="btnCloseSet">Done</button></div>
+    <h2 id="setTitle" tabindex="-1">Settings</h2>
     <p class="first-note" id="setFirst" hidden><b>Set up once.</b> Fill in your hospital, place, your name and your staff lists below. Every new report starts with them. Press Done when you're finished. The Settings button brings you back here.</p>
     <p class="help" style="margin:0">Saved in this browser only. Used as defaults for every new patient.</p>
     <div class="grid">
@@ -563,6 +567,7 @@ textarea.tall{min-height:220px}
       <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3" placeholder="One per line, e.g.&#10;DR TAN&#10;DR HAKIM"></textarea></div>
       <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3" placeholder="One per line, e.g.&#10;SN FARAH&#10;SN KHAIRUL"></textarea></div>
     </div>
+    <div class="panel-foot"><button class="btn primary" type="button" id="btnCloseSet">Done</button></div>
   </div>
 </div>
 
@@ -628,6 +633,12 @@ textarea.tall{min-height:220px}
 <div class="panel" id="guide" hidden>
   <div role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <h2 id="guideTitle" tabindex="-1">Getting started</h2>
+    <section class="group first-note" id="gInstall" aria-labelledby="gInst" hidden><h3 id="gInst">Install the app</h3>
+      <p data-inst="prompt" hidden>Install it once: it opens from your home screen or desktop, works with no internet and updates itself.</p>
+      <p data-inst="menu" hidden>Open your browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>. It then opens from your home screen, works with no internet and updates itself.</p>
+      <p data-inst="ios" hidden>Tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open the app from your home screen and fill in your details there: what you type in this browser tab stays in the tab.</p>
+      <p data-inst="file" hidden>This copy is a single file and does not update itself. For the app that works offline and updates itself, open <a href="https://azizakmal97.github.io/ot-report-app/" target="_blank" rel="noopener noreferrer">azizakmal97.github.io/ot-report-app</a> and install it.</p>
+      <div class="row"><button class="btn primary" type="button" id="btnInstall" hidden>Install app</button></div></section>
     <ol class="steps">
       <li><span><b>Patient and team (1-17).</b> Age and gender fill in from the I/C number.</span></li>
       <li><span><b>Department and case.</b> Pick one or more case cards: they are combined in the order you pick them. For teeth, set each tooth in the teeth builder, then press Write into report.</span></li>
@@ -6985,7 +6996,7 @@ const cleanCustom=c=>Object.fromEntries(Object.entries(c||{}).filter(([,v])=>Arr
   .map(([k,v])=>[String(k).slice(0,30),v.filter(x=>typeof x==="string").map(x=>x.slice(0,120)).slice(0,30)]));
 function openSettings(first){
   document.querySelectorAll("[data-s]").forEach(el=>{ const k=el.dataset.s; if(el.type==="checkbox") el.checked=!!S[k]; else el.value=S[k]??""; });
-  $("setFirst").hidden=first!==true; showCrest(); $("settings").hidden=false; $("btnCloseSet").focus();
+  $("setFirst").hidden=first!==true; showCrest(); $("settings").hidden=false; $("setTitle").focus();   // Done is at the bottom: open at the top
 }
 function showCrest(){ const i=$("crestImg"); const c=S.useFormCrest===false?null:((S.crest&&S.crest.data)?S.crest:(S.crestBW?BUILT_CREST_BW:BUILT_CREST)); if(c){ i.src=c.data; i.hidden=false; } else i.hidden=true; $("crestDel").textContent=S.crest?"Remove upload":"Remove"; }
 function showFormCode(){ $("brandCode").textContent=`${S.formCode||"Surgical report"} · A4 PDF`; }
@@ -7119,32 +7130,45 @@ function init(){
   window.addEventListener("beforeunload",e=>{ if(dirty&&D.name&&!inViewer&&S.autosave!=="all"){ e.preventDefault(); e.returnValue=""; } });   // kept patient details need no warning
   loadFormFont().then(schedule);
   $("f-newIc").addEventListener("change",e=>{ const v=fmtIc(e.target.value); if(v!==D.newIc){ e.target.value=D.newIc=v; schedule(); } });   // tidies a mid-text edit on leaving the field
-  initUpdates(); keepStorage();
+  initUpdates(); initInstall(); keepStorage();
   render();
 }
+/* ---------- install: the getting-started guide says how, until the app runs installed ---------- */
+let installEvt=null;
+const isInstalled=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+function installMode(){ if(isInstalled()) return ""; if(!document.querySelector('link[rel="manifest"]')) return "file"; return installEvt? "prompt" : isIOS? "ios" : "menu"; }
+function showInstall(){ const m=installMode(); $("gInstall").hidden=!m; document.querySelectorAll("[data-inst]").forEach(p=>{ p.hidden=p.dataset.inst!==m; }); $("btnInstall").hidden=m!=="prompt"; }
+function initInstall(){
+  addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; showInstall(); });   // our button in the guide instead of the browser's own bar
+  addEventListener("appinstalled",()=>{ installEvt=null; showInstall(); toast("Installed. Open OT Report from your home screen."); });
+  $("btnInstall").onclick=()=>{ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; showInstall(); }); };   // a prompt works once
+  showInstall(); }
 /* the installed app asks the browser not to clear saved settings and templates when the device runs low on space */
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="41";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
   lastCheck=Date.now(); const b=$("btnUpdate"); if(manual){ b.disabled=true; updNote("Checking…"); }
-  swReg.update().then(()=>{ if(manual&&!swReg.installing&&!swReg.waiting) updNote("You have the latest version."); })
+  swReg.update().then(()=>{ if(manual&&!swReg.installing) updNote(swReg.waiting? WAITING : "You have the latest version."); })
     .catch(()=>{ if(manual) updNote("Couldn't check. Connect to the internet and try again. The app keeps working offline."); })   // a background check offline is expected: stay quiet
     .finally(()=>{ b.disabled=false; });
 }
+const WAITING="New version downloaded. Close the app (every tab of it) and open it again to use it.";
+/* follow one new version by its own states: a page whose first visit installed the app never sees a controller change */
+function watchUpdate(w){ updNote("Downloading the new version…");
+  w.addEventListener("statechange",()=>{
+    if(w.state==="activated"){ updNote("New version ready. Reload to use it."); toast("A new version of the app is ready.",()=>location.reload(),"Reload"); }
+    else if(w.state==="installed") setTimeout(()=>{ if(w.state==="installed") updNote(WAITING); },3000);   // usually takes over at once; seen waiting until the app's tabs were closed
+    else if(w.state==="redundant") updNote("The download stopped. Try again when you're online."); }); }
 function initUpdates(){
   $("appVer").textContent=`Version ${APP_VERSION}`;
   const sw=navigator.serviceWorker; if(!sw) return;
-  const hadController=!!sw.controller;   // the very first install also takes control; only a replacement is an update
-  sw.addEventListener("controllerchange",()=>{ if(!hadController) return;
-    updNote("New version ready. Reload to use it."); toast("A new version of the app is ready.",()=>location.reload(),"Reload"); });
   sw.ready.then(reg=>{ swReg=reg;   // never resolves in the loose file, which registers no worker
-    $("btnUpdate").hidden=false; $("btnUpdate").onclick=()=>checkUpdate(true); updNote("Updates itself when the device is online.");
-    reg.addEventListener("updatefound",()=>{ const w=reg.installing; updNote("Downloading the new version…");
-      w.addEventListener("statechange",()=>{ if(w.state==="redundant") updNote("The download stopped. Try again when you're online."); }); });
+    $("btnUpdate").hidden=false; $("btnUpdate").onclick=()=>checkUpdate(true); updNote(reg.waiting? WAITING : "Updates itself when the device is online.");
+    reg.addEventListener("updatefound",()=>{ if(reg.active&&reg.installing) watchUpdate(reg.installing); });   // with no active worker it is the first install, not an update
     // a phone resumes the app instead of reopening it, so the browser's own check on opening rarely runs
     document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&Date.now()-lastCheck>36e5) checkUpdate(false); });
   });
