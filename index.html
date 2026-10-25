@@ -216,6 +216,13 @@ textarea.tall{min-height:220px}
 .about a,.help a{color:var(--accent);font-weight:600}
 .first-note{margin:0;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--accent-soft);font-size:13px}   /* first run only: says what to fill in */
 [tabindex="-1"]:focus{outline:none}   /* dialog titles take focus on open so it starts at the top; they are not controls */
+/* install screen: in a browser tab the app shows only this, so every copy in use is installed and updates itself */
+.gate{position:fixed;inset:0;z-index:30;background:var(--bg);display:grid;place-items:center;overflow:auto;padding:20px}
+.gate>div{width:min(460px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:12px}
+.gate h2{font-size:21px}
+.gate p{margin:0}
+.gate a{color:var(--accent);font-weight:600}
+html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen does not scroll */
 /* Done stays in reach at the bottom of a long dialog; the negative offsets cancel the dialog's own bottom padding */
 .panel-foot{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:auto -20px calc(-20px - env(safe-area-inset-bottom,0px));
   padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:flex-end}
@@ -633,12 +640,6 @@ textarea.tall{min-height:220px}
 <div class="panel" id="guide" hidden>
   <div role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <h2 id="guideTitle" tabindex="-1">Getting started</h2>
-    <section class="group first-note" id="gInstall" aria-labelledby="gInst" hidden><h3 id="gInst">Install the app</h3>
-      <p data-inst="prompt" hidden>Install it once: it opens from your home screen or desktop, works with no internet and updates itself.</p>
-      <p data-inst="menu" hidden>Open your browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>. It then opens from your home screen, works with no internet and updates itself.</p>
-      <p data-inst="ios" hidden>Tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open the app from your home screen and fill in your details there: what you type in this browser tab stays in the tab.</p>
-      <p data-inst="file" hidden>This copy is a single file and does not update itself. For the app that works offline and updates itself, open <a href="https://azizakmal97.github.io/ot-report-app/" target="_blank" rel="noopener noreferrer">azizakmal97.github.io/ot-report-app</a> and install it.</p>
-      <div class="row"><button class="btn primary" type="button" id="btnInstall" hidden>Install app</button></div></section>
     <ol class="steps">
       <li><span><b>Patient and team (1-17).</b> Age and gender fill in from the I/C number.</span></li>
       <li><span><b>Department and case.</b> Pick one or more case cards: they are combined in the order you pick them. For teeth, set each tooth in the teeth builder, then press Write into report.</span></li>
@@ -656,6 +657,19 @@ textarea.tall{min-height:220px}
   </div>
 </div>
 
+<div class="gate" id="installGate" hidden>
+  <div role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <h2 id="gateTitle" tabindex="-1">Install OT Report first</h2>
+    <p>Installed, it opens from your home screen or desktop, works with no internet and updates itself. Patient details stay on this device.</p>
+    <p data-inst="prompt" hidden>Press <b>Install app</b>, then open OT Report from your home screen or app list.</p>
+    <p data-inst="menu" hidden>Open your browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>. Then open OT Report from your home screen or app list.</p>
+    <p data-inst="ios" hidden>Tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open OT Report from your home screen.</p>
+    <p data-inst="file" hidden>This copy is a single file and cannot update itself. Open <a href="https://azizakmal97.github.io/ot-report-app/" target="_blank" rel="noopener noreferrer">azizakmal97.github.io/ot-report-app</a> in Chrome, Edge or Safari and install it from there.</p>
+    <p data-inst="done" hidden><b>Installed.</b> Open OT Report from your home screen or app list. You can close this tab.</p>
+    <div class="row"><button class="btn primary" type="button" id="btnInstall" hidden>Install app</button></div>
+    <p class="help" id="instHelp" hidden>No Install option? Firefox on a computer and links opened inside WhatsApp or Telegram can't install apps: open this link in Chrome, Edge or Safari. Already installed? Open it from your home screen or app list.</p>
+  </div>
+</div>
 <div id="toast" class="toast" hidden><span id="toastMsg"></span><button type="button" id="toastBtn" hidden>Undo</button></div>
 
 <datalist id="dl-surgeon"></datalist><datalist id="dl-asst"></datalist><datalist id="dl-nurse"></datalist><datalist id="dl-anaes"></datalist><datalist id="dl-all"></datalist>
@@ -7100,7 +7114,7 @@ function init(){
   $("btnSettings").onclick=()=>openSettings();
   $("btnStaff").onclick=()=>{ openSettings(); const ta=$("s-surgeons"); ta.focus(); ta.scrollIntoView({block:"center"}); };
   $("btnGuide").onclick=()=>{ $("settings").hidden=true; openGuide(); }; $("btnGuideDone").onclick=closeGuide;
-  bindSectionNav(); setBarHeight(); if(!store.get("otr.guideSeen",false)) openGuide(); $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
+  bindSectionNav(); setBarHeight(); initInstall(); if(!installMode()&&!store.get("otr.guideSeen",false)) openGuide(); $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
   $("settings").addEventListener("click",e=>{ if(e.target.id==="settings") $("settings").hidden=true; });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ $("settings").hidden=true; if(!$("sketch").hidden) closeSketch(); if(!$("guide").hidden) closeGuide(); if(!$("deptPanel").hidden){ $("deptPanel").hidden=true; renderTpls(); } } });
   document.querySelectorAll("[data-s]").forEach(el=>el.addEventListener(el.type==="checkbox"||el.tagName==="SELECT"?"change":"input",()=>{
@@ -7130,24 +7144,28 @@ function init(){
   window.addEventListener("beforeunload",e=>{ if(dirty&&D.name&&!inViewer&&S.autosave!=="all"){ e.preventDefault(); e.returnValue=""; } });   // kept patient details need no warning
   loadFormFont().then(schedule);
   $("f-newIc").addEventListener("change",e=>{ const v=fmtIc(e.target.value); if(v!==D.newIc){ e.target.value=D.newIc=v; schedule(); } });   // tidies a mid-text edit on leaving the field
-  initUpdates(); initInstall(); keepStorage();
+  initUpdates(); keepStorage();
   render();
 }
-/* ---------- install: the getting-started guide says how, until the app runs installed ---------- */
-let installEvt=null;
+/* ---------- install: required. In a browser tab only the install screen shows (owner, 2026-10-25) ---------- */
+let installEvt=null, installedNow=false;
 const isInstalled=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-function installMode(){ if(isInstalled()) return ""; if(!document.querySelector('link[rel="manifest"]')) return "file"; return installEvt? "prompt" : isIOS? "ios" : "menu"; }
-function showInstall(){ const m=installMode(); $("gInstall").hidden=!m; document.querySelectorAll("[data-inst]").forEach(p=>{ p.hidden=p.dataset.inst!==m; }); $("btnInstall").hidden=m!=="prompt"; }
+function installMode(){ if(isInstalled()) return ""; if(installedNow) return "done"; if(!document.querySelector('link[rel="manifest"]')) return "file"; return installEvt? "prompt" : isIOS? "ios" : "menu"; }
+function showInstall(){ const m=installMode(), gate=$("installGate");
+  for(const el of document.body.children) if(el!==gate) el.inert=!!m;   // nothing behind the screen can be reached
+  document.querySelectorAll("[data-inst]").forEach(p=>{ p.hidden=p.dataset.inst!==m; });
+  $("instHelp").hidden=!["prompt","menu","ios"].includes(m); $("btnInstall").hidden=m!=="prompt";
+  if(m&&gate.hidden){ gate.hidden=false; $("gateTitle").focus(); } else if(!m) gate.hidden=true; }
 function initInstall(){
   addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; showInstall(); });   // our button in the guide instead of the browser's own bar
-  addEventListener("appinstalled",()=>{ installEvt=null; showInstall(); toast("Installed. Open OT Report from your home screen."); });
+  addEventListener("appinstalled",()=>{ installEvt=null; installedNow=true; showInstall(); });
   $("btnInstall").onclick=()=>{ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; showInstall(); }); };   // a prompt works once
   showInstall(); }
 /* the installed app asks the browser not to clear saved settings and templates when the device runs low on space */
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.1";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
