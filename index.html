@@ -496,7 +496,7 @@ textarea.tall{min-height:220px}
     <p id="privacyNote"></p>
     <p>Templates are starting points, not clinical guidance. Check every entry before you print: the clinician who signs the report is responsible for it.</p>
     <p>This is not an official Ministry of Health (KKM) product and is not endorsed by KKM or any hospital. Use it only where your hospital allows. The signed paper form is the medical record. The app is provided as is, without warranty.</p>
-    <p>Made by Aziz Akmal - OMFS Surgeon to be · <a href="https://github.com/azizakmal97/ot-report-generator" target="_blank" rel="noopener noreferrer">Source on GitHub</a></p>
+    <p>Made by Aziz Akmal - OMFS Surgeon to be · <a href="https://github.com/azizakmal97/ot-report-app" target="_blank" rel="noopener noreferrer">App on GitHub</a></p>
   </footer>
 </section>
 
@@ -7107,7 +7107,7 @@ function init(){
 }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="36";   // stamped by tools/build.py from sw.js
+const APP_VERSION="37";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
