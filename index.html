@@ -6149,13 +6149,14 @@ const skSide=()=>{ const s=DIAGRAMS[SK.bg]?.side; return s&&(SK.flip? SK_SWAP[s]
 /* flipping mirrors what is drawn too, so a plate stays on the bone it was put on */
 function skFlip(){ closeSkText(true); skChange(()=>{ SK.flip=!SK.flip;
   for(const o of SK.objs){ if(o.pts) o.pts=o.pts.map(([x,y])=>[1000-x,y]); if(o.c) o.c=[1000-o.c[0],o.c[1]]; if(typeof o.rot==="number") o.rot=-o.rot; } }); }
-/* this department's diagrams first, then every other department's, then blank */
+/* this department's diagrams first, then every other department's under its name (each diagram once), then blank */
 function fillSketchBackgrounds(){
-  const sel=$("skBg"), own=(builtinOf(dept())?.diagrams||[]).filter(id=>DIAGRAMS[id]);
+  const sel=$("skBg"), own=(builtinOf(dept())?.diagrams||[]).filter(id=>DIAGRAMS[id]), listed=new Set(own);
   const opt=(value,text)=>{ const o=document.createElement("option"); o.value=value; o.textContent=text; return o; };
+  const group=(label,ids)=>{ if(!ids.length) return; const g=document.createElement("optgroup"); g.label=label; ids.forEach(id=>{ listed.add(id); g.append(opt(id,DIAGRAMS[id].title)); }); sel.append(g); };
   sel.innerHTML=""; own.forEach(id=>sel.append(opt(id,DIAGRAMS[id].title)));
-  const others=own.length? [] : Object.keys(DIAGRAMS);
-  if(others.length){ const g=document.createElement("optgroup"); g.label="Other departments"; others.forEach(id=>g.append(opt(id,DIAGRAMS[id].title))); sel.append(g); }
+  for(const d of DEPARTMENTS) if(d!==builtinOf(dept())) group(d.title||d.name,(d.diagrams||[]).filter(id=>DIAGRAMS[id]&&!listed.has(id)));
+  group("Other",Object.keys(DIAGRAMS).filter(id=>!listed.has(id)));   // a diagram no department lists yet
   sel.append(opt("","Blank"));
 }
 /* The SVG is rasterised once per zoom band, not every frame. During a pinch the old bitmap is stretched; it sharpens when the fingers lift. */
@@ -6461,7 +6462,7 @@ function skExport(){ const c=document.createElement("canvas"); c.width=1000; c.h
 
 function skReset(){ Object.assign(SK,{objs:[],sel:-1,cur:null,g:null,undo:[],redo:[],tool:null}); }
 /* An unfinished drawing survives Cancel or Escape and comes back on reopening; a new department or Add to report starts fresh. */
-function openSketch(){ const d=dept().name; if(SK.dept!==d){ skReset(); SK.dept=d; }
+function openSketch(){ const d=dept().name; if(SK.dept!==d){ skReset(); SK.dept=d; SK.bg=undefined; SK.flip=false; }   // a new department opens on its own first diagram
   const sel=$("skBg"), prev=SK.bg; fillSketchBackgrounds(); if(prev!==undefined&&[...sel.options].some(o=>o.value===prev)) sel.value=prev;
   SK.bg=sel.value; SK.fitted=true; skRenderTools(); $("sketch").hidden=false; skSync(); skDraw();
   document.querySelector("#skTools [aria-pressed=true]")?.focus(); }
@@ -7218,7 +7219,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.10";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.11";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
