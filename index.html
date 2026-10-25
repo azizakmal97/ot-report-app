@@ -556,12 +556,12 @@ textarea.tall{min-height:220px}
       <div class="f s3"><label for="s-certTitle">Designation</label><input type="text" id="s-certTitle" data-s="certTitle"></div>
       <div class="f"><span class="lbl">Print certifier's name</span><label class="tick" style="align-self:flex-start"><input type="checkbox" data-s="printCert"> Under “Signature” (leave off if you stamp)</label></div>
       <div class="f"><span class="lbl">Staff lists</span>
-        <span class="help">One person per line, with the title, written the way it should print (for example DR and the full name). No commas inside a name. The names show as tap-to-fill suggestions in the Team section. A new name you type into the report is added here automatically. Delete a line to remove a name.</span></div>
-      <div class="f s3"><label for="s-surgeons">Surgeons</label><textarea id="s-surgeons" data-s="surgeons" rows="3" placeholder="One per line, e.g.&#10;DR AHMAD FARIS BIN OMAR&#10;DR NUR AINA BINTI HASSAN"></textarea></div>
-      <div class="f s3"><label for="s-assts">Assistants</label><textarea id="s-assts" data-s="assts" rows="3" placeholder="One per line, e.g.&#10;DR LIM WEI JIE&#10;DR PRIYA A/P RAMAN"></textarea></div>
-      <div class="f s3"><label for="s-nurses">Nurses (scrub &amp; circulating)</label><textarea id="s-nurses" data-s="nurses" rows="3" placeholder="One per line, e.g.&#10;SN NORAINI BINTI ISA&#10;DSA AZURA BINTI SALLEH"></textarea></div>
-      <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3" placeholder="One per line, e.g.&#10;DR TAN MEI LING&#10;DR HAKIM BIN ZAINAL"></textarea></div>
-      <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3" placeholder="One per line, e.g.&#10;SN FARAH BINTI ROSLI&#10;SN KHAIRUL BIN DAUD"></textarea></div>
+        <span class="help">One person per line, with the title, written the way it should print (for example DR AHMAD). No commas inside a name. The names show as tap-to-fill suggestions in the Team section. A new name you type into the report is added here automatically. Delete a line to remove a name.</span></div>
+      <div class="f s3"><label for="s-surgeons">Surgeons</label><textarea id="s-surgeons" data-s="surgeons" rows="3" placeholder="One per line, e.g.&#10;DR AHMAD&#10;DR SITI"></textarea></div>
+      <div class="f s3"><label for="s-assts">Assistants</label><textarea id="s-assts" data-s="assts" rows="3" placeholder="One per line, e.g.&#10;DR LIM&#10;DR PRIYA"></textarea></div>
+      <div class="f s3"><label for="s-nurses">Nurses (scrub &amp; circulating)</label><textarea id="s-nurses" data-s="nurses" rows="3" placeholder="One per line, e.g.&#10;SN AINA&#10;DSA NORA"></textarea></div>
+      <div class="f s3"><label for="s-anaes">Anaesthetists</label><textarea id="s-anaes" data-s="anaes" rows="3" placeholder="One per line, e.g.&#10;DR TAN&#10;DR HAKIM"></textarea></div>
+      <div class="f s3"><label for="s-anaesAssts">Anaesthetic assistants</label><textarea id="s-anaesAssts" data-s="anaesAssts" rows="3" placeholder="One per line, e.g.&#10;SN FARAH&#10;SN KHAIRUL"></textarea></div>
     </div>
   </div>
 </div>
@@ -7126,7 +7126,7 @@ function init(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="40";   // stamped by tools/build.py from sw.js
+const APP_VERSION="41";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
