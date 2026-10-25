@@ -616,14 +616,14 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
         <span class="sk-ctx" id="skScrewCtl" hidden><span class="lbl">Screws</span><button class="btn small" type="button" id="skFewer" aria-label="Fewer screws">&minus;</button><span class="num" id="skCount" aria-live="polite"></span><button class="btn small" type="button" id="skMore" aria-label="More screws">+</button></span>
         <button class="btn small" type="button" id="skLag" aria-pressed="false" hidden>Lag screw</button>
         <button class="btn small" type="button" id="skEdit" hidden>Edit text</button></div>
-      <div class="sk-group" id="skCols" role="group" aria-label="Colour">
-        <button type="button" class="sk-sw" data-col="#111111" style="--c:#111111" aria-label="Black" aria-pressed="true"></button>
-        <button type="button" class="sk-sw" data-col="#1d3fbf" style="--c:#1d3fbf" aria-label="Blue" aria-pressed="false"></button>
-        <button type="button" class="sk-sw" data-col="#c41d2f" style="--c:#c41d2f" aria-label="Red" aria-pressed="false"></button></div>
       <div class="sk-group" id="skWidths" role="group" aria-label="Line width or label size">
         <button type="button" class="sk-sw sk-wd" data-w="0" style="--h:2px" aria-label="Thin" aria-pressed="false"></button>
         <button type="button" class="sk-sw sk-wd" data-w="1" style="--h:4px" aria-label="Medium" aria-pressed="true"></button>
         <button type="button" class="sk-sw sk-wd" data-w="2" style="--h:7px" aria-label="Thick" aria-pressed="false"></button></div>
+      <div class="sk-group" id="skCols" role="group" aria-label="Colour">
+        <button type="button" class="sk-sw" data-col="#111111" style="--c:#111111" aria-label="Black" aria-pressed="true"></button>
+        <button type="button" class="sk-sw" data-col="#1d3fbf" style="--c:#1d3fbf" aria-label="Blue" aria-pressed="false"></button>
+        <button type="button" class="sk-sw" data-col="#c41d2f" style="--c:#c41d2f" aria-label="Red" aria-pressed="false"></button></div>
       <div class="sk-group">
         <button type="button" class="sk-act" id="skDel" data-icon="del"><span>Delete</span></button>
         <button type="button" class="sk-act" id="skClear" data-icon="clear"><span>Clear</span></button></div>
@@ -656,7 +656,7 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
     <section class="group" aria-labelledby="gResp"><h3 id="gResp">Your responsibility</h3>
       <p>The templates are starting points written to help, not clinical guidance. Read every line before you print or sign: the clinician who signs the report is responsible for it.</p>
       <p>This is not an official Ministry of Health (KKM) product and is not endorsed by KKM or any hospital. Use it only where your hospital allows. The signed paper form is the medical record. The app is provided as is, without warranty.</p></section>
-    <div class="row"><button class="btn primary" type="button" id="btnGuideDone">Start</button></div>
+    <div class="panel-foot"><button class="btn primary" type="button" id="btnGuideDone">Start</button></div>
   </div>
 </div>
 
@@ -6077,7 +6077,7 @@ const DEPT_TOOLS={omfs:SK_BONE,ortho:SK_BONE,gs:SK_ABDO,paedsurg:SK_ABDO,uro:SK_
   neuro:"burr incision drain plate lesion text arrow line pen", ent:SK_LOOK, ophthal:SK_LOOK,
   medical:"lesion drain shade text arrow line pen", paedsdental:"shade lesion incision suture text arrow line pen",
   other:"incision suture lesion shade text arrow line pen"};
-const SK_SEL_HINT={plate:"Drag an end dot or a screw to adjust; the side dot moves it. Screws − / + sets the screws, the width buttons the plate size",
+const SK_SEL_HINT={plate:"Drag an end or a screw; the side dot moves it. Screws and size are in the bar above",
   seg:"Drag an end dot to adjust, or the line to move it", box:"Drag to move. Corner dot resizes, top dot rotates",
   path:"Drag to move. Corner dot resizes, top dot rotates", text:"Tap it again to change the words. Corner dot resizes",
   region:"Delete clears this shading"};
@@ -7189,7 +7189,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.5";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.6";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
