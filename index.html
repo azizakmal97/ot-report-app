@@ -7032,9 +7032,22 @@ function setView(v){ if(document.body.dataset.view==="edit") editY=window.scroll
   if(v==="preview"){ schedule(); window.scrollTo(0,0); }
   else requestAnimationFrame(()=>{ lineEditors.forEach(ed=>ed.fitAll()); window.scrollTo(0,editY); }); }   // rows measure 0 while hidden: fit them before scrolling
 
-const firstRun=()=>!store.get("otr.guideSeen",false);
+// the installed app has its own first run: on Android it shares storage with the browser tab, where the guide may already be seen
+/* Back (Android's button, the browser's arrow, Escape): an open dialog or the Preview takes one history step,
+   so Back closes it instead of leaving the app */
+function closeTop(){
+  if(!$("sketch").hidden) closeSketch(); else if(!$("guide").hidden) closeGuide();
+  else if(!$("deptPanel").hidden){ $("deptPanel").hidden=true; renderTpls(); }
+  else if(!$("settings").hidden) $("settings").hidden=true; else if(document.body.dataset.view==="preview") setView("edit"); }
+const overlayOpen=()=>!!document.querySelector(".panel:not([hidden])")||document.body.dataset.view==="preview";
+function syncBack(){ const step=!!history.state?.overlay; if(overlayOpen()&&!step) history.pushState({overlay:1},""); else if(!overlayOpen()&&step) history.back(); }
+function bindBack(){
+  new MutationObserver(syncBack).observe(document.body,{subtree:true,attributes:true,attributeFilter:["hidden","data-view"]});
+  addEventListener("popstate",()=>{ if(overlayOpen()) closeTop(); });   // the observer adds the step back if something is still open
+  syncBack(); }
+const firstRun=()=>!store.get(isInstalled()?"otr.appSetup":"otr.guideSeen",false);
 function openGuide(){ $("g-autosave").value=S.autosave; $("btnGuideDone").textContent=firstRun()?"Next: your details":"Start"; $("guide").hidden=false; $("guideTitle").focus(); }
-function closeGuide(){ const first=firstRun(); $("guide").hidden=true; store.set("otr.guideSeen",true); if(first) openSettings(true); }   // a new user sets hospital, name and staff before the first report
+function closeGuide(){ const first=firstRun(); $("guide").hidden=true; store.set("otr.guideSeen",true); if(isInstalled()) store.set("otr.appSetup",true); if(first) openSettings(true); }   // a new user sets hospital, name and staff before the first report
 /* section menu: tap to open and scroll to a section; the one being read is marked */
 function bindSectionNav(){
   const nav=$("secNav"), links=[...nav.querySelectorAll("a")];
@@ -7116,7 +7129,7 @@ function init(){
   $("btnGuide").onclick=()=>{ $("settings").hidden=true; openGuide(); }; $("btnGuideDone").onclick=closeGuide;
   bindSectionNav(); setBarHeight(); initInstall(); if(!installMode()&&!store.get("otr.guideSeen",false)) openGuide(); $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
   $("settings").addEventListener("click",e=>{ if(e.target.id==="settings") $("settings").hidden=true; });
-  document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ $("settings").hidden=true; if(!$("sketch").hidden) closeSketch(); if(!$("guide").hidden) closeGuide(); if(!$("deptPanel").hidden){ $("deptPanel").hidden=true; renderTpls(); } } });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeTop(); }); bindBack();
   document.querySelectorAll("[data-s]").forEach(el=>el.addEventListener(el.type==="checkbox"||el.tagName==="SELECT"?"change":"input",()=>{
     S[el.dataset.s]= el.type==="checkbox"? el.checked : el.value; saveSettings(); }));
   $("crestFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const im=new Image(); const url=URL.createObjectURL(f);
@@ -7165,7 +7178,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.1";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.2";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
