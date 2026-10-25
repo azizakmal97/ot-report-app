@@ -309,6 +309,7 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
 .sk-bar :focus-visible{outline-offset:-3px}   /* an outside ring would be clipped by the scrolling row */
 .sk-group{display:flex;align-items:center;gap:4px;flex:none;padding-right:8px;border-right:1px solid var(--line)}
 .sk-group:last-child{border-right:none;padding-right:0}
+.sk-group:not(:has(> :not([hidden]))){display:none}   /* the selection's own controls (screws, lag, edit) take no room until they apply */
 .sk-ico{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .sk-tool,.sk-act{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:56px;min-height:52px;padding:4px 6px;
   border:1px solid var(--field-line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:11.5px;font-weight:600;line-height:1.1;white-space:nowrap;cursor:pointer}
@@ -611,6 +612,10 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
       <button class="btn" type="button" id="skCancel">Cancel</button><button class="btn primary" type="button" id="skInsert">Add to report</button></div>
     <div class="sk-bar" id="skTools" role="toolbar" aria-label="Drawing tools"></div>
     <div class="sk-bar" role="toolbar" aria-label="Colour, line width and editing">
+      <div class="sk-group">
+        <span class="sk-ctx" id="skScrewCtl" hidden><span class="lbl">Screws</span><button class="btn small" type="button" id="skFewer" aria-label="Fewer screws">&minus;</button><span class="num" id="skCount" aria-live="polite"></span><button class="btn small" type="button" id="skMore" aria-label="More screws">+</button></span>
+        <button class="btn small" type="button" id="skLag" aria-pressed="false" hidden>Lag screw</button>
+        <button class="btn small" type="button" id="skEdit" hidden>Edit text</button></div>
       <div class="sk-group" id="skCols" role="group" aria-label="Colour">
         <button type="button" class="sk-sw" data-col="#111111" style="--c:#111111" aria-label="Black" aria-pressed="true"></button>
         <button type="button" class="sk-sw" data-col="#1d3fbf" style="--c:#1d3fbf" aria-label="Blue" aria-pressed="false"></button>
@@ -622,10 +627,6 @@ html:has(.gate:not([hidden])){overflow:hidden}   /* the app behind the screen do
       <div class="sk-group">
         <button type="button" class="sk-act" id="skDel" data-icon="del"><span>Delete</span></button>
         <button type="button" class="sk-act" id="skClear" data-icon="clear"><span>Clear</span></button></div>
-      <div class="sk-group">
-        <span class="sk-ctx" id="skScrewCtl" hidden><span class="lbl">Screws</span><button class="btn small" type="button" id="skFewer" aria-label="Fewer screws">&minus;</button><span class="num" id="skCount" aria-live="polite"></span><button class="btn small" type="button" id="skMore" aria-label="More screws">+</button></span>
-        <button class="btn small" type="button" id="skLag" aria-pressed="false" hidden>Lag screw</button>
-        <button class="btn small" type="button" id="skEdit" hidden>Edit text</button></div>
     </div>
     <p class="sk-hint" id="skHint" aria-live="polite"></p>
     <div class="sk-stage" id="skStage">
@@ -6076,14 +6077,14 @@ const DEPT_TOOLS={omfs:SK_BONE,ortho:SK_BONE,gs:SK_ABDO,paedsurg:SK_ABDO,uro:SK_
   neuro:"burr incision drain plate lesion text arrow line pen", ent:SK_LOOK, ophthal:SK_LOOK,
   medical:"lesion drain shade text arrow line pen", paedsdental:"shade lesion incision suture text arrow line pen",
   other:"incision suture lesion shade text arrow line pen"};
-const SK_SEL_HINT={plate:"Drag an end dot or a screw to adjust. The side dot moves it",
+const SK_SEL_HINT={plate:"Drag an end dot or a screw to adjust; the side dot moves it. Screws − / + sets the screws, the width buttons the plate size",
   seg:"Drag an end dot to adjust, or the line to move it", box:"Drag to move. Corner dot resizes, top dot rotates",
   path:"Drag to move. Corner dot resizes, top dot rotates", text:"Tap it again to change the words. Corner dot resizes",
   region:"Delete clears this shading"};
 /* how each object is stored: seg = two ends (pts), box = centre, half sizes and turn (c, rx, ry, rot), path = points */
 const SK_KIND={line:"seg",arrow:"seg",fracture:"seg",incision:"seg",suture:"seg",plate:"seg",screw:"seg",wire:"seg",
   lesion:"box",mesh:"box",clip:"box",burr:"box",text:"box",pen:"path",drain:"path",lasso:"path",region:"region"};
-const SK_LOCKED=new Set(["burr","clip","text"]), SK_NO_WIDTH=new Set(["select","plate","screw","shade","lasso","region"]);
+const SK_LOCKED=new Set(["burr","clip","text"]), SK_NO_WIDTH=new Set(["select","screw","shade","lasso","region"]);
 const SK_WIDTHS=[3,5,8], SK_TEXT=[24,30,40];      // line widths and label sizes for thin / medium / thick
 const SK_SEL="#a3304f", SK_SHADE=.38, SK_ZOOM=8;  // the canvas is white paper in both themes, so the light accent is used
 const SK_HIT=22, SK_TOL=12, SK_TAP=8, SK_MIN_OFF=44, SK_ROT=36;   // screen px: handle hit radius, line hit slack, tap slop, handle offsets
@@ -6161,6 +6162,7 @@ function skSegDist(q,a,b){ const dx=b[0]-a[0], dy=b[1]-a[1], t=skClamp(((q[0]-a[
   return Math.hypot(q[0]-a[0]-dx*t,q[1]-a[1]-dy*t); }
 function skPolyDist(q,pts){ let d=Math.hypot(q[0]-pts[0][0],q[1]-pts[0][1]); for(let i=1;i<pts.length;i++) d=Math.min(d,skSegDist(q,pts[i-1],pts[i])); return d; }
 /* A plate runs from pts[0] to pts[1]; each screw is a fraction 0..1 along it, so dragging keeps it on the plate. */
+const skPlateW=o=>({3:10,5:16,8:22})[o.w]||16;   // thin / medium / thick plate; medium is the size plates always had
 const along=(s,t)=>[s.pts[0][0]+(s.pts[1][0]-s.pts[0][0])*t, s.pts[0][1]+(s.pts[1][1]-s.pts[0][1])*t];
 function projectOn(s,q){ const [a,b]=s.pts, dx=b[0]-a[0], dy=b[1]-a[1], len2=dx*dx+dy*dy||1;
   return Math.min(1,Math.max(0,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/len2)); }
@@ -6196,10 +6198,10 @@ const SK_DRAW={
   incision:(g,o)=>{ g.lineCap="butt"; g.setLineDash([o.w*3,o.w*2]); skPoly(g,o.pts); g.stroke(); },
   suture:(g,o)=>{ const [a,b]=o.pts, n=Math.max(1,Math.round(skUnit(a,b)[2]/24)); skPoly(g,o.pts); g.stroke();
     g.lineWidth=Math.max(2,o.w*.7); skTicks(g,a,b,n,8+o.w,(i,l)=>l*(i+.5)/n); },
-  plate:(g,o)=>{ g.lineWidth=16; skPoly(g,o.pts); g.stroke();
+  plate:(g,o)=>{ const th=skPlateW(o), r=th*.4, c=th*.22; g.lineWidth=th; skPoly(g,o.pts); g.stroke();   // screw heads scale with the plate
     for(const t of o.screws){ const [x,y]=along(o,t);
-      g.fillStyle="#fff"; g.beginPath(); g.arc(x,y,6.5,0,SK_TAU); g.fill();
-      g.lineWidth=2; g.beginPath(); g.moveTo(x-3.5,y); g.lineTo(x+3.5,y); g.moveTo(x,y-3.5); g.lineTo(x,y+3.5); g.stroke(); } },
+      g.fillStyle="#fff"; g.beginPath(); g.arc(x,y,r,0,SK_TAU); g.fill();
+      g.lineWidth=Math.max(1.5,th/8); g.beginPath(); g.moveTo(x-c,y); g.lineTo(x+c,y); g.moveTo(x,y-c); g.lineTo(x,y+c); g.stroke(); } },
   screw:(g,o)=>{ const [a,b]=o.pts, [ux,uy,l]=skUnit(a,b), tip=Math.min(12,l*.3), from=o.lag? l*.55 : 10;   // a lag screw is threaded at its far end only
     g.lineWidth=6; skPoly(g,[a,[b[0]-ux*tip,b[1]-uy*tip]]); g.stroke(); skTriangle(g,b,ux,uy,tip,3.5);
     g.lineWidth=2.5; skTicks(g,a,b,Math.max(0,Math.floor((l-tip-from)/7)),7,i=>from+i*7);
@@ -6252,7 +6254,7 @@ function skPickHandle(o,q,screwsOnly){ let best=null, bd=Infinity;
   return best; }
 function skDrawSelection(g){ const o=SK.objs[SK.sel]; if(!o||!skVisible(o)) return; const k=SK.view.k, K=SK_KIND[o.t];
   g.save(); g.strokeStyle=SK_SEL; g.lineWidth=2/k; g.setLineDash([6/k,4/k]);
-  if(K==="seg"){ g.setLineDash([]); g.strokeStyle="rgba(163,48,79,.25)"; g.lineCap="round"; g.lineWidth=(o.t==="plate"||o.t==="screw"? 16 : o.w)+16/k; skPoly(g,o.pts); g.stroke(); }
+  if(K==="seg"){ g.setLineDash([]); g.strokeStyle="rgba(163,48,79,.25)"; g.lineCap="round"; g.lineWidth=(o.t==="plate"? skPlateW(o) : o.t==="screw"? 16 : o.w)+16/k; skPoly(g,o.pts); g.stroke(); }
   else if(K==="region"){ const r=skRegionOf(o); if(r) g.stroke(skRegionPath(r)); }
   else { const f=skFrame(o), m=6/k; g.save(); g.translate(f.c[0],f.c[1]); g.rotate(f.rot); g.strokeRect(-f.hx-m,-f.hy-m,2*(f.hx+m),2*(f.hy+m));
     g.setLineDash([]); g.beginPath(); g.moveTo(0,-f.hy-m); g.lineTo(0,-f.hy-SK_ROT/k); g.stroke(); g.restore(); }
@@ -7187,7 +7189,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.4";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.5";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
