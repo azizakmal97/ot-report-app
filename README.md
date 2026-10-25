@@ -5,7 +5,7 @@
 <h1 align="center">OT Report</h1>
 
 <p align="center">
-The KKM surgical report form, HSR (118)O.T/1-20, filled in on your phone or computer<br>
+The KKM surgical report form, HSR (118)O.T/1-20, filled in on your phone or computer
 and saved as a PDF that prints on A4 exactly where the paper form expects it.
 </p>
 
