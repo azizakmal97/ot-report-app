@@ -9,8 +9,8 @@ The KKM surgical report form, HSR (118)O.T/1-20, filled in on your phone or comp
 and saved as a PDF that prints on A4 exactly where the paper form expects it.
 </p>
 
-<p align="center"><b><a href="https://azizakmal97.github.io/ot-report-app/">Open the app</a></b><br>
-<a href="https://azizakmal97.github.io/ot-report-app/">https://azizakmal97.github.io/ot-report-app/</a></p>
+<p align="center"><b><a href="https://ot-report.github.io/">Open the app</a></b><br>
+<a href="https://ot-report.github.io/">https://ot-report.github.io/</a></p>
 
 <br>
 
