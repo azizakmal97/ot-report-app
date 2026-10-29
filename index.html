@@ -6610,7 +6610,7 @@ function initInstall(){
 function keepStorage(){ if(navigator.serviceWorker&&navigator.storage?.persist) navigator.serviceWorker.ready.then(()=>navigator.storage.persist()).catch(e=>console.warn("Persistent storage not granted:",e)); }
 
 /* ---------- updates: only the installed app (dist/pwa) has a service worker; a release bumps VERSION in sw.js ---------- */
-const APP_VERSION="1.14";   // stamped by tools/build.py from sw.js
+const APP_VERSION="1.15";   // stamped by tools/build.py from sw.js
 let swReg=null, lastCheck=0;
 const updNote=msg=>{ $("updNote").textContent=msg; };
 function checkUpdate(manual){
@@ -7307,7 +7307,8 @@ function init(){
   $("s-curDept").onchange=e=>switchDept(e.target.value);   // same as the Case picker: clears the case, with Undo
   $("btnStaff").onclick=()=>{ openSettings(); const ta=$("s-surgeons"); ta.focus(); ta.scrollIntoView({block:"center"}); };
   $("btnGuide").onclick=()=>{ $("settings").hidden=true; openGuide(); }; $("btnGuideDone").onclick=closeGuide;
-  bindSectionNav(); setBarHeight(); initInstall(); if(!installMode()) openDeptGate();   // the guide follows on a first run $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
+  bindSectionNav(); setBarHeight(); initInstall(); if(!installMode()) openDeptGate();   // the guide follows on a first run
+  $("btnCloseSet").onclick=()=>{ $("settings").hidden=true; };
   $("settings").addEventListener("click",e=>{ if(e.target.id==="settings") $("settings").hidden=true; });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeTop(); }); bindBack();
   document.querySelectorAll("[data-s]").forEach(el=>el.addEventListener(el.type==="checkbox"||el.tagName==="SELECT"?"change":"input",()=>{
